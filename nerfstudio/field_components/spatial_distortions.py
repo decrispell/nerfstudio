@@ -15,18 +15,35 @@
 """Space distortions."""
 
 import abc
-from typing import Optional, Union
+from dataclasses import dataclass, field
+from typing import Optional, Union, Type
 
 import torch
 from functorch import jacrev, vmap
 from jaxtyping import Float
 from torch import Tensor, nn
 
+from nerfstudio.configs.base_config import InstantiateConfig
 from nerfstudio.utils.math import Gaussians
+
+
+@dataclass
+class SpatialDistortionConfig(InstantiateConfig):
+    """Configuration for spatial distortion instantiation"""
+
+    _target: Type = field(default_factory=lambda: SpatialDistortion)
+    """target class to instantiate"""
 
 
 class SpatialDistortion(nn.Module):
     """Apply spatial distortions"""
+
+    def __init__(
+        self,
+        config: SpatialDistortionConfig,
+    ) -> None:
+        super().__init__()
+        self.config = config
 
     @abc.abstractmethod
     def forward(self, positions: Union[Float[Tensor, "*bs 3"], Gaussians]) -> Union[Float[Tensor, "*bs 3"], Gaussians]:
@@ -37,6 +54,18 @@ class SpatialDistortion(nn.Module):
         Returns:
             Union: distorted sample
         """
+
+
+@dataclass
+class SceneContractionConfig(SpatialDistortionConfig):
+    """Configuration for spatial distortion instantiation"""
+
+    _target: Type = field(default_factory=lambda: SceneContraction)
+    """target class to instantiate"""
+
+    order: Optional[Union[float, int]] = None
+    """order to use when computing magnitude of input points"""
+
 
 
 class SceneContraction(SpatialDistortion):
@@ -59,9 +88,9 @@ class SceneContraction(SpatialDistortion):
 
     """
 
-    def __init__(self, order: Optional[Union[float, int]] = None) -> None:
-        super().__init__()
-        self.order = order
+    def __init__(self, config: SceneContractionConfig) -> None:
+        super().__init__(config)
+        self.order = config.order
 
     def forward(self, positions):
         def contract(x):

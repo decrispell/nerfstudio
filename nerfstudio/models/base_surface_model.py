@@ -29,7 +29,7 @@ from torch.nn import Parameter
 from nerfstudio.cameras.rays import RayBundle
 from nerfstudio.field_components.encodings import NeRFEncoding
 from nerfstudio.field_components.field_heads import FieldHeadNames
-from nerfstudio.field_components.spatial_distortions import SceneContraction
+from nerfstudio.field_components.spatial_distortions import SpatialDistortionConfig
 from nerfstudio.fields.nerfacto_field import NerfactoField
 from nerfstudio.fields.sdf_field import SDFFieldConfig
 from nerfstudio.fields.vanilla_nerf_field import NeRFField
@@ -76,6 +76,8 @@ class SurfaceModelConfig(ModelConfig):
     """Total variational loss multiplier"""
     overwrite_near_far_plane: bool = False
     """whether to use near and far collider from command line"""
+    spatial_distortion: SpatialDistortionConfig = field(default_factory=SpatialDistortionConfig)
+    """Config for scene contraction"""
 
 
 class SurfaceModel(Model):
@@ -91,7 +93,7 @@ class SurfaceModel(Model):
         """Set the fields and modules."""
         super().populate_modules()
 
-        self.scene_contraction = SceneContraction(order=float("inf"))
+        self.scene_contraction = self.config.spatial_distortion.setup()
 
         # Can we also use contraction for sdf?
         # Fields
